@@ -164,7 +164,14 @@ ifneq ($(KERNEL_NO_GCC), true)
         endif
     endif
 
-    KERNEL_MAKE_FLAGS += CPATH="/usr/include:/usr/include/x86_64-linux-gnu" HOSTLDFLAGS="-L/usr/lib/x86_64-linux-gnu -L/usr/lib64 -fuse-ld=lld"
+    ifeq ($(TARGET_KERNEL_CLANG_COMPILE),false)
+        # CPATH is also seen by the aarch64 gcc, which then picks up the host
+        # /usr/include/stdint.h and fails with a uintptr_t redefinition. Give
+        # the host headers to the host compiler only.
+        KERNEL_MAKE_FLAGS += HOSTCFLAGS="-isystem /usr/include -isystem /usr/include/x86_64-linux-gnu" HOSTCXXFLAGS="-isystem /usr/include -isystem /usr/include/x86_64-linux-gnu" HOSTLDFLAGS="-L/usr/lib/x86_64-linux-gnu -L/usr/lib64 -fuse-ld=lld"
+    else
+        KERNEL_MAKE_FLAGS += CPATH="/usr/include:/usr/include/x86_64-linux-gnu" HOSTLDFLAGS="-L/usr/lib/x86_64-linux-gnu -L/usr/lib64 -fuse-ld=lld"
+    endif
 
     ifeq ($(KERNEL_ARCH),arm64)
         # Add 32-bit GCC to PATH so that arm-linux-androidkernel-as is available for CONFIG_COMPAT_VDSO
